@@ -1,0 +1,8 @@
+##gff-version 3
+##sequence-region   CYP51A 1 2020
+CYP51A . gene 1 2020 . + . ID=gene:AFUA_4G06890;Name=CYP51A
+CYP51A	.	exon	402	602	.	+	.	ID=exon01;Parent=gene:AFUA_4G06890
+CYP51A	.	CDS	402	602	.	+	0	ID=CDS:EAL90099;Parent=transcript:EAL90099;protein_id=EAL90099
+CYP51A	.	mRNA	603	673	.	+	.	ID=transcript:EAL90099;Parent=gene:AFUA_4G06890;biotype=protein_coding;transcript_id=EAL90099
+CYP51A	.	exon	674	2020	.	+	.	Parent=transcript:EAL90099;Name=EAL90099-2;constitutive=1;ensembl_end_phase=0;ensembl_phase=0;exon_id=EAL90099-2;rank=2
+CYP51A	.	CDS	674	2020	.	+	0	ID=CDS:EAL90099;Parent=transcript:EAL90099;protein_id=EAL90099
