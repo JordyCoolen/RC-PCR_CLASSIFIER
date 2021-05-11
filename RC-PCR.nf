@@ -183,7 +183,7 @@ process '5A_annotation' {
         """
         else if(database!="CYP51A")
         """
-        echo 'none' > ${samplename}.ann.vcf
+        echo 'none' > ${samplename}.final.vcf
         """
 }
 

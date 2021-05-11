@@ -1,4 +1,4 @@
-# RC-PCR pipeline V0.1
+#RC-PCR pipeline V0.1
 
 # install
 1. obtain docker image
@@ -17,7 +17,7 @@ https://surfdrive.surf.nl/files/index.php/s/SUDIJ18vk6ZJBhd
    
 6. Extract conda.tar.gz in folder
 
-# batch run docker
+## batch run docker
 ```bash
 # USAGE
 # bash run_batch_docker.sh <inputpath> <file_extension> <database> <threads> <image>
@@ -26,6 +26,9 @@ https://surfdrive.surf.nl/files/index.php/s/SUDIJ18vk6ZJBhd
 # bash run_batch_docker.sh /workflow/input/ _001.fastq.gz CYP51A 8 nextflow_centos
 # <file_extension> most common _001.fastq.gz
 ```
+
+## FLOW-DIAGRAM
+![Alt text](flowchart.png?raw=true "Flowdiagram")
 
 ##conda environments
 
