@@ -1,4 +1,4 @@
-#RC-PCR pipeline V0.1
+#RC-PCR pipeline V0.1.1 (BETA)
 
 # install
 1. obtain docker image
@@ -20,10 +20,11 @@ https://surfdrive.surf.nl/files/index.php/s/SUDIJ18vk6ZJBhd
 ## batch run docker
 ```bash
 # USAGE
+cd project
 # bash run_batch_docker.sh <inputpath> <file_extension> <database> <threads> <image>
 # bash run_batch_docker.sh ${1}             ${2}          ${3}        ${4}     ${5}
 # Example:
-# bash run_batch_docker.sh /workflow/input/ _001.fastq.gz CYP51A 8 nextflow_centos
+bash run_batch_docker.sh /file/location/ _001.fastq.gz CYP51A 8 jonovox/nextflowcentos:latest
 # <file_extension> most common _001.fastq.gz
 ```
 

@@ -56,7 +56,7 @@ KMAdb      : $KMAdb
 process '1A_clean_reads' {
     tag '1A'
     conda 'bioconda::fastp=0.20.1 bioconda::pyfastx=0.6.12 conda-forge::simplejson=3.17.0'
-    publishDir outDir + '/fastp', mode: 'copy', pattern: "*.fastp.json"
+    publishDir outDir + '/fastp', mode: 'copy'
     input:
         set pairID, file(reads) from reads_ch1
     output:
@@ -70,7 +70,7 @@ process '1A_clean_reads' {
                                 -I ${reads[1]} -O ${samplename}_R2_fastp.fastq.gz \
                                 --umi_len=${UMILEN} --umi --umi_loc=per_read --umi_prefix=UMI \
                                 --html ${samplename}.fastp.html --json ${samplename}.fastp.json \
-                                --length_required ${minreadlength}
+                                --length_required ${minreadlength} --trim_poly_g --trim_poly_x
         """
 }
 
