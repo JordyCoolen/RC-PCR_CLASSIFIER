@@ -13,7 +13,7 @@ docker pull jonovox/nextflowcentos:latest
 4. navigate to project
 
 5. Download prebuild conda.tar.gz
-https://surfdrive.surf.nl/files/index.php/s/SUDIJ18vk6ZJBhd
+https://surfdrive.surf.nl/files/index.php/s/5q2feFVult4v81k
    
 6. Extract conda.tar.gz in folder
 
