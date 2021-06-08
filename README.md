@@ -17,6 +17,11 @@ https://surfdrive.surf.nl/files/index.php/s/SUDIJ18vk6ZJBhd
    
 6. Extract conda.tar.gz in folder
 
+## single sample docker
+```bash
+sh docker/run.sh RC jonovox/nextflowcentos:latest
+```
+
 ## batch run docker
 ```bash
 # USAGE
@@ -74,6 +79,26 @@ bash run_batch_docker.sh /file/location/ _001.fastq.gz CYP51A 8 jonovox/nextflow
 └── test_UMI_counttable.xlsx  #primer count table
 ```
 
+#database structure
+
+```bash
+db
+├── databasename
+│   ├── KMA
+│   │   ├── databasename.comp.b
+│   │   ├── databasename.length.b
+│   │   ├── databasename.name
+│   │   └── databasename.seq.b
+│   ├── blast
+│   │   ├── sequences.fasta
+│   │   ├── sequences.fasta.fai
+│   │   ├── sequences.nhr
+│   │   ├── sequences.nin
+│   │   └── sequences.nsq
+│   └── primers
+│       └── databasename_primers.fasta
+```
+
 # Extra
 
 # blastdb
@@ -82,7 +107,7 @@ bash run_batch_docker.sh /file/location/ _001.fastq.gz CYP51A 8 jonovox/nextflow
 makeblastdb -in /workflow/db/blast_db/18S/sequences.fasta -title 18S -dbtype nucl -out /workflow/db/blast_db/18S/sequences
 ```
 
-CYP51A
+CYP51A (Afu4g06890)
 ```bash
 makeblastdb -in /workflow/db/blast_db/CYP51A/sequences.fasta -title CYP51A -dbtype nucl -out /workflow/db/blast_db/CYP51A/sequences
 ```
@@ -92,13 +117,20 @@ makeblastdb -in /workflow/db/blast_db/CYP51A/sequences.fasta -title CYP51A -dbty
 ```bash
 kma index -i /workflow/db/KMA/18S.fa -o /workflow/db/KMA/18S
 ```
-CYP51A
+CYP51A (Afu4g06890)
 ```bash
 kma index -i /workflow/db/KMA/CYP51A.fa -o /workflow/db/KMA/CYP51A
 ```
 
 # snpEff
-manual CYP51A
+manual CYP51A (Afu4g06890)
 ```bash
 snpEff build -gff3 CYP51A
+```
+
+# SILVA database
+SILVA_138.1_SSURef_NR99_tax_silva_trunc
+convert rRNA to DNA
+```bash
+perl -pe 'tr/tU/uT/ unless(/>/)' < db/SILVA_138.1_SSURef_NR99_tax_silva_trunc.fasta > SILVA_138.1_SSURef_NR99_tax_silva_trunc_DNA.fasta
 ```

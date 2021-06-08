@@ -13,9 +13,9 @@ threads          = "$params.threads"
 UMILEN           = "$params.UMILEN"
 minreadlength    = "$params.minreadlength"
 database         = "$params.database"
-primerfile       = "${baseDir}/db/primers/${database}_primers.fasta"
-KMAdb            = "${baseDir}/db/KMA/${database}"
-blastdbpath      = "${baseDir}/db/blast_db/"
+primerfile       = "${baseDir}/db/${database}/primers/${database}_primers.fasta"
+KMAdb            = "${baseDir}/db/${database}/KMA/${database}"
+blastdbpath      = "${baseDir}/db/${database}/"
 def samplename   = file("$params.reads").simpleName[0].split('_')[0]
 abricate         = "$params.abricate"
 
@@ -42,7 +42,7 @@ abricate   : $params.abricate
 
 ~~~~~~~~~~~Databases~~~~~~~~~~~
 primerfile : $primerfile
-blastdb    : $blastdbpath+"/"$database
+blastdb    : $blastdbpath+"blast"
 KMAdb      : $KMAdb
 
 ~~~~~~~~~~~Authors~~~~~~~~~~~~~~
@@ -157,7 +157,7 @@ process '4A_abricate' {
   script:
     if(abricate==true)
     """
-    abricate --datadir ${blastdbpath} --db ${database} ${consensus} --mincov 30 --minid 60 --threads ${threads}  > ${samplename}_blast.txt
+    abricate --datadir ${blastdbpath} --db blast ${consensus} --mincov 30 --minid 60 --threads ${threads}  > ${samplename}_blast.txt
     """
     else if(abricate==false)
     """
