@@ -194,9 +194,9 @@ if __name__ == '__main__':
     print(f"Percentage correct pairs: {perc_correct}")
     print(f"Number of reads: {sum(counttable['Count'])}")
 
-    outputFile = os.path.join(args.outputDir, f"{samplename}_UMI_counttable.xlsx")
+    outputFile = os.path.join(args.outputDir, f"{samplename}_UMI_counttable.csv")
     print(f"File saved: {outputFile}")
 
     # save counttable to disk
-    counttable.to_excel(outputFile)
+    counttable.to_csv(outputFile)
     print("Finished")
