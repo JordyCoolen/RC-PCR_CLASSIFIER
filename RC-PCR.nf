@@ -82,7 +82,7 @@ process '2A_measure_amplicons' {
     input:
         set file(forward_read), file(reverse_read) from fastp_2A
     output:
-        file "*.xlsx"
+        file "*.csv"
         file ".command.*"
     script:
         """
