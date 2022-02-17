@@ -42,8 +42,8 @@ bash run_batch_docker.sh /file/location/ _001.fastq.gz CYP51A 8 jonovox/nextflow
   env-f07c78eef9e8319c7eb087d931e36003
   * 2A_measure_amplicons\
     env-cd4ea0676bf53b5d7e5c6c6c523f0013
-  * 3A_KMA\
-    env-7390a52046feb71a7f6f3361a867269b
+  * 3A_KMA (version 1.3.28)\
+    env-84e06c5335c0a958ed012db619fdfceb
   * 3B_process_KMA\
     env-4ca5b26b8a059c60e73996439311c22f
   * 4A_abricate\
@@ -115,11 +115,11 @@ makeblastdb -in /workflow/db/blast_db/CYP51A/sequences.fasta -title CYP51A -dbty
 # CYP51A
 18S
 ```bash
-kma index -i /workflow/db/KMA/18S.fa -o /workflow/db/KMA/18S
+kma_index -i /workflow/db/KMA/18S.fa -o /workflow/db/KMA/18S
 ```
 CYP51A (Afu4g06890)
 ```bash
-kma index -i /workflow/db/KMA/CYP51A.fa -o /workflow/db/KMA/CYP51A
+kma_index -i /workflow/db/KMA/CYP51A.fa -o /workflow/db/KMA/CYP51A
 ```
 
 # snpEff
@@ -134,3 +134,7 @@ convert rRNA to DNA
 ```bash
 perl -pe 'tr/tU/uT/ unless(/>/)' < db/SILVA_138.1_SSURef_NR99_tax_silva_trunc.fasta > SILVA_138.1_SSURef_NR99_tax_silva_trunc_DNA.fasta
 ```
+
+# NOTES
+splitting of samples on UMI using seqkit
+seqkit grep -irp UMI samplename.fastq.gz > output.fastq

@@ -14,10 +14,15 @@ UMILEN           = "$params.UMILEN"
 minreadlength    = "$params.minreadlength"
 database         = "$params.database"
 primerfile       = "${baseDir}/db/${database}/primers/${database}_primers.fasta"
+bedfile          = "${baseDir}/db/${database}/primers/${database}_primers.bed"
 KMAdb            = "${baseDir}/db/${database}/KMA/${database}"
 blastdbpath      = "${baseDir}/db/${database}/"
 def samplename   = file("$params.reads").simpleName[0].split('_')[0]
 abricate         = "$params.abricate"
+
+// Tools paths and command prefixes
+reporter         = "$baseDir/scripts/final_report.py"
+vcf2table        = "$baseDir/scripts/vcf2table.py"
 
 // Parsing the input parameters
 outDir           = "$params.outDir"+"/${samplename}"
@@ -31,7 +36,7 @@ Channel
 
 log.info """
 
-NEXTFLOW RC-PCR V0.1
+NEXTFLOW RC-PCR V0.2
 ================================
 samplename : $samplename
 reads      : $params.reads
@@ -39,9 +44,13 @@ outDir     : $params.outDir
 codeBase   : $baseDir
 threads    : $params.threads
 abricate   : $params.abricate
+UMILEN     : $params.UMILEN
+minreadlenth : $params.minreadlength
+database   : $params.database
 
 ~~~~~~~~~~~Databases~~~~~~~~~~~
 primerfile : $primerfile
+bedfile    : $bedfile
 blastdb    : $blastdbpath+"blast"
 KMAdb      : $KMAdb
 
@@ -95,19 +104,19 @@ process '2A_measure_amplicons' {
 process '3A_KMA' {
   tag '3A'
   time "30m"
-  conda 'bioconda::kma=1.3.15'
+  conda 'bioconda::kma=1.3.28'
   publishDir outDir + '/kma', mode: 'copy'
   input:
   file reads from fastp_3A
   output:
     file "${samplename}*"
-    file "${samplename}.vcf.gz" into vcf_5A
+    file "${samplename}.vcf.gz"
     file "${samplename}.fsa" into consensus_4A
     file "${samplename}.sam" into kma_3B
     file ".command.*"
   script:
     """
-    kma -t_db ${KMAdb} -ipe ${reads[0]} ${reads[1]} -t ${threads} -a -ex_mode -ef -1t1 -vcf 2 -and -apm f -o ${samplename} -sam 4 > ${samplename}.sam 2>/dev/null || exit 0
+    kma -t_db ${KMAdb} -ipe ${reads[0]} ${reads[1]} -t ${threads} -gapextend 0 -a -ex_mode -ef -1t1 -vcf 2 -and -apm f -o ${samplename} -sam 4 > ${samplename}.sam 2>/dev/null || exit 0
     #kma -t_db ${KMAdb} -ipe ${reads[0]} ${reads[1]} -t ${threads} -a -ex_mode -ef -dense -1t1 -ref_fsa -mem_mode -and -apm f -o kma 2>/dev/null || exit 0
     """
 }
@@ -122,8 +131,8 @@ process '3B_process_KMA' {
   input:
   file sam from kma_3B
   output:
-    file "${samplename}.sorted.bam"
-    file "${samplename}.sorted.bam.bai"
+    file "${samplename}.sorted.bam" into bam_3C, bam_3D
+    file "${samplename}.sorted.bam.bai" into bamindex_3C, bamindex_3D
     file ".command.*"
   script:
     """
@@ -141,6 +150,45 @@ process '3B_process_KMA' {
     # this would make it possible to quickly evaluate the results
 
     """
+}
+
+// Process 3A: freebayes
+process '3D_freebayes' {
+  tag '3D'
+  conda 'bioconda::freebayes=1.3.6'
+  //conda 'bioconda::platypus-variant=0.8.1.1'
+  publishDir outDir + '/freebayes', mode: 'copy'
+  input:
+    file bam from bam_3D
+    file bamindex from bamindex_3D
+  output:
+    file "${samplename}.vcf" into vcf_5A
+    file ".command.*"
+    file "*"
+  script:
+    """
+    freebayes -f "${KMAdb}.fa" --ploidy 1 ${bam} > ${samplename}.vcf
+
+    #platypus callVariants --refFile "${KMAdb}.fa" --bamFiles ${bam} --nCPU 4 -o ${samplename}.vcf
+    """
+}
+
+
+// Process 3C: primerdepth
+process '3C_primerdepth' {
+    tag '3C'
+    conda 'bioconda::mosdepth=0.3.1'
+    publishDir outDir + '/mosdepth', mode: 'copy'
+    input:
+        file bam from bam_3C
+        file bamindex from bamindex_3C
+    output:
+        file "*" into data_6
+        file ".command.*"
+    script:
+        """
+        mosdepth --fast-mode --no-per-base --threads $threads --by ${bedfile} ${samplename} ${bam}
+        """
 }
 
 // create abricate to detect 16S
@@ -174,16 +222,23 @@ process '5A_annotation' {
         file vcf from vcf_5A
     output:
         file "${samplename}.final.vcf"
+        file "${samplename}_annot_table.txt" into annotation_7
         file ".command.*"
   script:
         if(database=="CYP51A")
         """
-        bcftools view -f PASS ${vcf} > ${samplename}.pass.vcf
-        snpEff CYP51A ${samplename}.pass.vcf -hgvs1LetterAa > ${samplename}.final.vcf
+        bcftools view -f . ${vcf} > ${samplename}.pass.vcf
+        bcftools reheader -f "${KMAdb}.fa.fai" -o ${samplename}.pass.correct.vcf ${samplename}.pass.vcf
+        snpEff CYP51A ${samplename}.pass.correct.vcf -hgvs1LetterAa > ${samplename}.final.vcf
+
+        ${baseDir}/conda/env-variantcalling/bin/python $vcf2table ${samplename}.final.vcf --sample ${samplename} \
+        -ad -e -o ${samplename}_annot_table.txt
+
         """
         else if(database!="CYP51A")
         """
         echo 'none' > ${samplename}.final.vcf
+        echo 'none' > ${samplename}_annot_table.txt
         """
 }
 
@@ -194,11 +249,52 @@ process '6_multiQC' {
   publishDir outDir + '/QC', mode: 'copy'
   input:
   file reads from fastp_6
+  file data from data_6
   output:
+    file "${samplename}.mosdepth.summary.txt" into mosdepth_7B
     file "*.html"
     file ".command.*"
   script:
     """
-    multiqc ${outDir}/fastp/
+    multiqc ${outDir}/fastp/ ${outDir}/mosdepth/
     """
+}
+
+// Process 7A: obtain run parameters
+process '7A_parameters' {
+    tag '7A'
+    publishDir outDir + '/report', mode: 'copy'
+    input:
+    output:
+        file "parameters.txt" into params_7B
+    script:
+        """
+        touch parameters.txt
+        echo "Parameter\tValue" >> parameters.txt
+        echo "Reads\t$params.reads" >> parameters.txt
+        echo "Database\t$params.database" >> parameters.txt
+        echo "abricate:\t$params.abricate" >> parameters.txt
+        echo "minreadlength:\t$params.minreadlength" >> parameters.txt
+        echo "UMI length:\t$params.UMILEN" >> parameters.txt
+        """
+}
+
+// Process 7B: generate a report for interpretation by the clinician (or for research purposes)
+process '7B_report' {
+    tag '7B'
+    conda "${baseDir}/conda/env-025066a104bf8ce5621e328d8009733a"
+    publishDir outDir + '/report', mode: 'copy'
+    input:
+        file annotation from annotation_7
+        file params from params_7B
+        file mosdepth from mosdepth_7B
+    output:
+        file "${samplename}.html"
+        file "${samplename}.pdf"
+        file ".command.*"
+    script:
+        """
+        $reporter --sampleName ${samplename} \
+        --annotation ${annotation} --params ${params} --mosdepth ${mosdepth}
+        """
 }

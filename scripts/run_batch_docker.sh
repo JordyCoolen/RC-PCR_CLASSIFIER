@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # USAGE
-# bash run_batch_docker.sh <inputpath> <file_extension> <database> <threads> <image>
-# bash run_batch_docker.sh ${1}             ${2}          ${3}        ${4}     ${5}
+# bash run_batch_docker.sh <inputpath> <file_extension> <database> <threads> <image> <outputname>
+# bash run_batch_docker.sh ${1}             ${2}          ${3}        ${4}     ${5}   ${6}
 # Example:
 # bash run_batch_docker.sh /workflow/input/ _001.fastq.gz CYP51A 8 jonovox/easyseq_covid19:latest
 # <file_extension> most common _001.fastq.gz
@@ -17,6 +17,6 @@ do
     docker run -it --rm --mount type=bind,source=${PWD},target=/workflow \
     --mount type=bind,source=${1},target=/workflow/input \
     ${5} nextflow run RC-PCR.nf \
-    --reads "/workflow/input/${base}_R{1,2}${2}" --outDir /workflow/output/ \
+    --reads "/workflow/input/${base}_R{1,2}${2}" --outDir /workflow/output_${6}/ \
     --threads ${4} --database ${3} -resume --UMILEN 25
 done
