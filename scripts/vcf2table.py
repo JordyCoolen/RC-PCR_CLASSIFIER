@@ -102,6 +102,11 @@ def get_default_vcf_parse_dict(rec, sample_name, alt_n):
     More are added by vcf2table if certain critera are met"""
     #print(rec.INFO["HRUN"])
     #print(rec.INFO["CONSVAR"])
+
+    # calculate the allel frequency of freebayes variant calls
+    AF = rec.INFO["AO"][0] / (rec.INFO["AO"][0] + rec.INFO["RO"]) # AO/ (AO/RO)
+    AF = "{:.2f}".format(AF)
+
     return OrderedDict([
                 ("Sample",           sample_name),
                 ("Position",         rec.POS),
@@ -109,8 +114,10 @@ def get_default_vcf_parse_dict(rec, sample_name, alt_n):
                 ("Reference",        rec.REF),
                 ("Alternative",      rec.ALT[alt_n].value),
                 ("Quality",          rec.QUAL),
-                ("Allele Frequency", rec.INFO["AF"]),
-                ("Total Read Depth", rec.INFO["DP"])
+                ("Allele Frequency", AF),
+                ("Total Read Depth", rec.INFO["DP"]),
+                ("RO", rec.INFO["RO"]),
+                ("AO", rec.INFO["AO"][0])
                 
                 #("Total Read Depth", rec.INFO["DP"]),
                 #("Read Depth Call",  rec.calls[0].data.get("DP")),

@@ -17,6 +17,7 @@ primerfile       = "${baseDir}/db/${database}/primers/${database}_primers.fasta"
 bedfile          = "${baseDir}/db/${database}/primers/${database}_primers.bed"
 KMAdb            = "${baseDir}/db/${database}/KMA/${database}"
 blastdbpath      = "${baseDir}/db/${database}/"
+STARfasta        = "${baseDir}/db/${database}/STAR/CYP51A.fa"
 def samplename   = file("$params.reads").simpleName[0].split('_')[0]
 abricate         = "$params.abricate"
 
@@ -69,7 +70,7 @@ process '1A_clean_reads' {
     input:
         set pairID, file(reads) from reads_ch1
     output:
-        set file("${samplename}_R1_fastp.fastq.gz"), file("${samplename}_R2_fastp.fastq.gz") into fastp_2A, fastp_3A, fastp_6
+        set file("${samplename}_R1_fastp.fastq.gz"), file("${samplename}_R2_fastp.fastq.gz") into fastp_2A, fastp_3A, fastp_3C, fastp_6
         file "${samplename}.fastp.json"
         file "${samplename}.fastp.html"
         file ".command.*"
@@ -111,7 +112,7 @@ process '3A_KMA' {
   output:
     file "${samplename}*"
     file "${samplename}.vcf.gz"
-    file "${samplename}.fsa" into consensus_4A
+    file "${samplename}.fsa" into consensus_4C
     file "${samplename}.sam" into kma_3B
     file ".command.*"
   script:
@@ -131,8 +132,8 @@ process '3B_process_KMA' {
   input:
   file sam from kma_3B
   output:
-    file "${samplename}.sorted.bam" into bam_3C, bam_3D
-    file "${samplename}.sorted.bam.bai" into bamindex_3C, bamindex_3D
+    file "${samplename}.sorted.bam"
+    file "${samplename}.sorted.bam.bai"
     file ".command.*"
   script:
     """
@@ -152,36 +153,47 @@ process '3B_process_KMA' {
     """
 }
 
-// Process 3A: freebayes
-process '3D_freebayes' {
-  tag '3D'
-  conda 'bioconda::freebayes=1.3.6'
-  //conda 'bioconda::platypus-variant=0.8.1.1'
-  publishDir outDir + '/freebayes', mode: 'copy'
+// create KMA tool to detect 16S
+// Process 3A: KMA
+process '3C_STAR' {
+  tag '3C'
+  time "30m"
+  conda 'bioconda::star=2.7.10a'
+  publishDir outDir + '/star', mode: 'copy'
   input:
-    file bam from bam_3D
-    file bamindex from bamindex_3D
+  file reads from fastp_3C
   output:
-    file "${samplename}.vcf" into vcf_5A
-    file ".command.*"
     file "*"
+    file "${samplename}Aligned.sortedByCoord.out.bam" into bam_4A, bam_4B
+    file "${samplename}Aligned.sortedByCoord.out.bam.bai" into bamindex_4A, bamindex_4B
+    file ".command.*"
   script:
+    if(database=="CYP51A")
     """
-    freebayes -f "${KMAdb}.fa" --ploidy 1 ${bam} > ${samplename}.vcf
+    ## create database
+    #STAR --runMode genomeGenerate --genomeDir "${baseDir}/db/${database}/STAR/" --genomeFastaFiles $STARfasta --genomeSAindexNbases 4
+    STAR --genomeDir "${baseDir}/db/${database}/STAR/" --readFilesCommand zcat --readFilesIn ${reads[0]} ${reads[1]} \
+    --scoreDelOpen 0 --scoreDelBase 0 --scoreInsOpen 0 --scoreInsBase 0 \
+    --seedSearchStartLmax 20 --winAnchorMultimapNmax 200 --seedMultimapNmax 100000 \
+    --runThreadN ${threads} --outFileNamePrefix ${samplename} --limitBAMsortRAM 1001609349 --outSAMtype BAM SortedByCoordinate
 
-    #platypus callVariants --refFile "${KMAdb}.fa" --bamFiles ${bam} --nCPU 4 -o ${samplename}.vcf
+    samtools index ${samplename}Aligned.sortedByCoord.out.bam
+    """
+    else if(database!="CYP51A")
+    """
+    echo 'none' > ${samplename}Aligned.sortedByCoord.out.bam
+    echo 'none' > ${samplename}Aligned.sortedByCoord.out.bam.bai
     """
 }
 
-
-// Process 3C: primerdepth
-process '3C_primerdepth' {
-    tag '3C'
+// Process 4A: primerdepth
+process '4A_primerdepth' {
+    tag '4A'
     conda 'bioconda::mosdepth=0.3.1'
     publishDir outDir + '/mosdepth', mode: 'copy'
     input:
-        file bam from bam_3C
-        file bamindex from bamindex_3C
+        file bam from bam_4A
+        file bamindex from bamindex_4A
     output:
         file "*" into data_6
         file ".command.*"
@@ -191,14 +203,32 @@ process '3C_primerdepth' {
         """
 }
 
+// Process 4B: freebayes
+process '4B_freebayes' {
+  tag '4B'
+  conda 'bioconda::freebayes=1.3.6'
+  publishDir outDir + '/freebayes', mode: 'copy'
+  input:
+    file bam from bam_4B
+    file bamindex from bamindex_4B
+  output:
+    file "${samplename}.vcf" into vcf_5A
+    file ".command.*"
+    file "*"
+  script:
+    """
+    freebayes -f "${KMAdb}.fa" --ploidy 1 ${bam} > ${samplename}.vcf
+    """
+}
+
 // create abricate to detect 16S
-// Process 4A: abricate
-process '4A_abricate' {
-  tag '4A'
+// Process 4C: abricate
+process '4C_abricate' {
+  tag '4C'
   conda 'bioconda::abricate=1.0.1'
   publishDir outDir + '/abricate', mode: 'copy'
   input:
-    file consensus from consensus_4A
+    file consensus from consensus_4C
   output:
     file "${samplename}_blast.txt"
     file ".command.*"
