@@ -4,7 +4,7 @@ params.outDir = "./output"
 params.reads = "$baseDir/test/test_OUT01_R{1,2}.fastq.gz"
 params.UMILEN = 18
 params.minreadlength = 100
-params.database = "18S"
+params.database = "SILVA"
 params.abricate = true
 
 // Parsing the input parameters
@@ -37,7 +37,7 @@ Channel
 
 log.info """
 
-NEXTFLOW RC-PCR V0.2
+NEXTFLOW SILVA Classification RC-PCR V0.1
 ================================
 samplename : $samplename
 reads      : $params.reads
@@ -57,8 +57,7 @@ KMAdb      : $KMAdb
 
 ~~~~~~~~~~~Authors~~~~~~~~~~~~~~
         J.P.M. Coolen
-            V. Karvink
-            T. Baltussen
+        B. van Wessel
 ================================
 """
 
@@ -111,126 +110,28 @@ process '3A_KMA' {
   file reads from fastp_3A
   output:
     file "${samplename}*"
-    file "${samplename}.vcf.gz"
-    file "${samplename}.fsa" into consensus_4C
-    file "${samplename}.sam" into kma_3B
+    file "${samplename}.fsa" into consensus_4A
+    file "${samplename}.res" into kma_5A, kma_7B
     file ".command.*"
   script:
     """
-    kma -t_db ${KMAdb} -ipe ${reads[0]} ${reads[1]} -t ${threads} -gapextend 0 -a -ex_mode -ef -1t1 -vcf 2 -and -apm f -o ${samplename} -sam 4 > ${samplename}.sam 2>/dev/null || exit 0
-    #kma -t_db ${KMAdb} -ipe ${reads[0]} ${reads[1]} -t ${threads} -a -ex_mode -ef -dense -1t1 -ref_fsa -mem_mode -and -apm f -o kma 2>/dev/null || exit 0
+    kma -t_db ${KMAdb} -ipe ${reads[0]} ${reads[1]} -t ${threads} \
+    -ef -ex_mode -1t1 -and -apm f -o ${samplename} 2>/dev/null || exit 0
+    #kma -t_db ${KMAdb} -ipe ${reads[0]} ${reads[1]} -t ${threads} \
+    #-a -ex_mode -ef -1t1 -and -apm f -o ${samplename} -sam 4 > ${samplename}.sam 2>/dev/null || exit 0
     """
 }
 
-// create KMA tool to match primers
-// Process 3B: KMA
-process '3B_process_KMA' {
-  tag '3B'
-  conda 'bioconda::samtools=1.12'
-  errorStrategy 'ignore'
-  publishDir outDir + '/kma', mode: 'copy'
-  input:
-  file sam from kma_3B
-  output:
-    file "${samplename}.sorted.bam"
-    file "${samplename}.sorted.bam.bai"
-    file ".command.*"
-  script:
-    """
-
-    # merge sam files
-
-    # sam --> bam
-    samtools view -b ${sam} > ${samplename}.bam
-    # sort bam
-    samtools sort ${samplename}.bam > ${samplename}.sorted.bam
-    # index bam
-    samtools index ${samplename}.sorted.bam
-
-    # additionally filter reference on only hits
-    # this would make it possible to quickly evaluate the results
-
-    """
-}
-
-// create KMA tool to detect 16S
-// Process 3A: KMA
-process '3C_STAR' {
-  tag '3C'
-  time "30m"
-  conda 'bioconda::star=2.7.10a'
-  publishDir outDir + '/star', mode: 'copy'
-  input:
-  file reads from fastp_3C
-  output:
-    file "*"
-    file "${samplename}Aligned.sortedByCoord.out.bam" into bam_4A, bam_4B
-    file "${samplename}Aligned.sortedByCoord.out.bam.bai" into bamindex_4A, bamindex_4B
-    file ".command.*"
-  script:
-    if(database=="CYP51A")
-    """
-    ## create database
-    #STAR --runMode genomeGenerate --genomeDir "${baseDir}/db/${database}/STAR/" --genomeFastaFiles $STARfasta --genomeSAindexNbases 4
-    STAR --genomeDir "${baseDir}/db/${database}/STAR/" --readFilesCommand zcat --readFilesIn ${reads[0]} ${reads[1]} \
-    --scoreDelOpen 0 --scoreDelBase 0 --scoreInsOpen 0 --scoreInsBase 0 \
-    --seedSearchStartLmax 20 --winAnchorMultimapNmax 200 --seedMultimapNmax 100000 \
-    --runThreadN ${threads} --outFileNamePrefix ${samplename} --limitBAMsortRAM 1001609349 --outSAMtype BAM SortedByCoordinate
-
-    samtools index ${samplename}Aligned.sortedByCoord.out.bam
-    """
-    else if(database!="CYP51A")
-    """
-    echo 'none' > ${samplename}Aligned.sortedByCoord.out.bam
-    echo 'none' > ${samplename}Aligned.sortedByCoord.out.bam.bai
-    """
-}
-
-// Process 4A: primerdepth
-process '4A_primerdepth' {
-    tag '4A'
-    conda 'bioconda::mosdepth=0.3.1'
-    publishDir outDir + '/mosdepth', mode: 'copy'
-    input:
-        file bam from bam_4A
-        file bamindex from bamindex_4A
-    output:
-        file "*" into data_6
-        file ".command.*"
-    script:
-        """
-        mosdepth --fast-mode --no-per-base --threads $threads --by ${bedfile} ${samplename} ${bam}
-        """
-}
-
-// Process 4B: freebayes
-process '4B_freebayes' {
-  tag '4B'
-  conda 'bioconda::freebayes=1.3.6'
-  publishDir outDir + '/freebayes', mode: 'copy'
-  input:
-    file bam from bam_4B
-    file bamindex from bamindex_4B
-  output:
-    file "${samplename}.vcf" into vcf_5A
-    file ".command.*"
-    file "*"
-  script:
-    """
-    freebayes -f "${KMAdb}.fa" --ploidy 1 ${bam} > ${samplename}.vcf
-    """
-}
-
-// create abricate to detect 16S
-// Process 4C: abricate
-process '4C_abricate' {
-  tag '4C'
+// create abricate to detect 16S/18S SILVA
+// Process 4A: abricate
+process '4A_abricate' {
+  tag '4A'
   conda 'bioconda::abricate=1.0.1'
   publishDir outDir + '/abricate', mode: 'copy'
   input:
-    file consensus from consensus_4C
+    file consensus from consensus_4A
   output:
-    file "${samplename}_blast.txt"
+    file "${samplename}_blast.txt" into blast_7B
     file ".command.*"
   script:
     if(abricate==true)
@@ -243,32 +144,31 @@ process '4C_abricate' {
     """
 }
 
-// 5A: annotation of the genome/consensus fasta
-process '5A_annotation' {
+// SILVA database circle packing visualization using nodejs
+process '5A_circle_packing_viz' {
     tag '5A'
-    conda 'bioconda::snpeff=5.0 bioconda::bcftools=1.12'
-    publishDir outDir + '/annotation', mode: 'copy'
+    conda "${baseDir}/conda/env-nodejs"
+    publishDir outDir + '/report/viz', mode: 'copy'
     input:
-        file vcf from vcf_5A
+        file kma from kma_5A
     output:
-        file "${samplename}.final.vcf"
-        file "${samplename}_annot_table.txt" into annotation_7
         file ".command.*"
-  script:
-        if(database=="CYP51A")
+    script:
         """
-        bcftools view -f . ${vcf} > ${samplename}.pass.vcf
-        bcftools reheader -f "${KMAdb}.fa.fai" -o ${samplename}.pass.correct.vcf ${samplename}.pass.vcf
-        snpEff CYP51A ${samplename}.pass.correct.vcf -hgvs1LetterAa > ${samplename}.final.vcf
+        python ${baseDir}/conda/env-nodejs/Circle-packing-visualization/data-processing/circle-packing-parsing.py -i "${outDir}/kma" \
+        -o ${baseDir}/conda/env-nodejs/Circle-packing-visualization/Data.csv
 
-        ${baseDir}/conda/env-variantcalling/bin/python $vcf2table ${samplename}.final.vcf --sample ${samplename} \
-        -ad -e -o ${samplename}_annot_table.txt
+        cd ${baseDir}/conda/env-nodejs/Circle-packing-visualization/
 
-        """
-        else if(database!="CYP51A")
-        """
-        echo 'none' > ${samplename}.final.vcf
-        echo 'none' > ${samplename}_annot_table.txt
+        #excute nodejs code
+        npm run build
+
+        # copy files manual to report folder
+        mkdir -p ${outDir}/report/viz
+        cp index.html ${outDir}/report/viz
+        cp -r dist ${outDir}/report/viz/
+        cp style.css ${outDir}/report/viz
+        cp ${baseDir}/conda/env-nodejs/Circle-packing-visualization/Data.csv ${outDir}/report/viz
         """
 }
 
@@ -279,14 +179,12 @@ process '6_multiQC' {
   publishDir outDir + '/QC', mode: 'copy'
   input:
   file reads from fastp_6
-  file data from data_6
   output:
-    file "${samplename}.mosdepth.summary.txt" into mosdepth_7B
     file "*.html"
     file ".command.*"
   script:
     """
-    multiqc ${outDir}/fastp/ ${outDir}/mosdepth/
+    multiqc ${outDir}/fastp/
     """
 }
 
@@ -315,16 +213,16 @@ process '7B_report' {
     conda "${baseDir}/conda/env-025066a104bf8ce5621e328d8009733a"
     publishDir outDir + '/report', mode: 'copy'
     input:
-        file annotation from annotation_7
         file params from params_7B
-        file mosdepth from mosdepth_7B
+        file blast from blast_7B
+        file kma from kma_7B
     output:
         file "${samplename}.html"
         file "${samplename}.pdf"
         file ".command.*"
     script:
         """
-        $reporter --sampleName ${samplename} \
-        --annotation ${annotation} --params ${params} --mosdepth ${mosdepth}
+        $reporter --sampleName ${samplename} --params ${params} --blast ${blast} \
+        --kma ${kma}
         """
 }

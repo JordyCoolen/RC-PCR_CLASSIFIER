@@ -1,4 +1,4 @@
-#RC-PCR pipeline V0.1.1 (BETA)
+#NEXTFLOW SILVA Classification RC-PCR V0.1 (BETA)
 
 # install
 1. obtain docker image

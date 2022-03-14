@@ -2,13 +2,13 @@
 
 ######
 INFO = "Convert results to PDF report"
-__version__ = "0.2"
+__version__ = "0.1"
 ######
 
 """
 Title:          final_report.py
 Author:         J.P.M. Coolen
-Date:           17-02-2022 (dd-mm-yyyy)
+Date:           10-03-2022 (dd-mm-yyyy)
 Description:    Convert results to PDF report
 """
 
@@ -29,8 +29,10 @@ def parse_args():
                         help="location to annotation file"),
     parser.add_argument("--params", type=str, required=False,
                         help="location to parameters.txt file"),
-    parser.add_argument("--mosdepth", type=str, required=False,
-                        help="location to mosdepth.summary.txt file"),
+    parser.add_argument("--blast", type=str, required=False,
+                        help="location to abricate blast result file"),
+    parser.add_argument("--kma", type=str, required=False,
+                        help="location to kma result file .res"),
     parser.add_argument("-o", "--outputDir", type=str, required=False,
                         help="full path of output folder", default=os.path.abspath("./"))
     parser.add_argument("-v", "--version", action="version",
@@ -76,20 +78,14 @@ def fill_html(args):
     # load parameters.txt file
     params_df = pd.read_csv(args.params, sep='\t')
 
-    # load mosdepth.summary.txt file
-    mosdepth_df = pd.read_csv(args.mosdepth, sep='\t')
+    # load blast .txt result file of abricate
+    blast_df = pd.read_csv(args.blast, sep='\t')
+    blast_df = blast_df.sort_values(by=['%COVERAGE'], ascending=False)
 
-    # # load file with lineage output
-    # lineage_df = pd.read_csv(args.lineage)
-
-    # obtain annotation file and stats
-    variant_stats_df = pd.read_csv(args.annotation, sep='\t', engine='python', comment='##')
-
-    # for now remove the added Shorthand column
-    try:
-        variant_stats_df = variant_stats_df.drop('Shorthand', 1)
-    except KeyError:
-        print("Skipped remove Shorthand column, as it doesn't exist")
+    # load kma .res result file of kma
+    kma_df = pd.read_csv(args.kma, sep='\t')
+    kma_df = kma_df.sort_values(by=['q_value'], ascending=False)
+    kma_df = kma_df.head(10)
 
     # fill html
     template_vars = {
@@ -101,11 +97,10 @@ def fill_html(args):
         "sampleName": args.sampleName,
         "date": date,
 
-        # mosdepth
-        "depth": mosdepth_df.to_html(index=False, header=True),
+        # classification results
+        "kma": kma_df.to_html(index=False, header=True),
 
-        # variants
-        "variants": variant_stats_df.to_html(index=False, header=True),
+        "blast": blast_df.to_html(index=False, header=True),
 
         # parameters
         "parameters": params_df.to_html(index=False, header=True),
