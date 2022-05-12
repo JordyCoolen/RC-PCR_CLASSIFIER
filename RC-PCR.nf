@@ -2,7 +2,7 @@
 params.threads = 4
 params.outDir = "./output"
 params.reads = "$baseDir/test/test_OUT01_R{1,2}.fastq.gz"
-params.UMILEN = 18
+params.UMILEN = 25
 params.minreadlength = 100
 params.database = "SILVA"
 params.abricate = true
@@ -69,7 +69,7 @@ process '1A_clean_reads' {
     input:
         set pairID, file(reads) from reads_ch1
     output:
-        set file("${samplename}_R1_fastp.fastq.gz"), file("${samplename}_R2_fastp.fastq.gz") into fastp_2A
+        set file("${samplename}_R1_fastp.fastq.gz"), file("${samplename}_R2_fastp.fastq.gz") into fastp_2A, fastp_3A, fastp_6
         file "${samplename}.fastp.json"
         file "${samplename}.fastp.html"
         file ".command.*"
@@ -91,7 +91,7 @@ process '1B_clean_reads' {
     input:
         set pairID, file(reads) from reads_ch2
     output:
-        set file("${samplename}_R1_fastp.fastq.gz"), file("${samplename}_R2_fastp.fastq.gz") into fastp_1C, fastp_3A, fastp_6
+        set file("${samplename}_R1_fastp.fastq.gz"), file("${samplename}_R2_fastp.fastq.gz") into fastp_1C
         file "${samplename}.fastp.json"
         file "${samplename}.fastp.html"
         file ".command.*"
