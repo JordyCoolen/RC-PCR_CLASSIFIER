@@ -26,10 +26,11 @@ sh docker/run.sh RC jonovox/nextflowcentos:latest
 ```bash
 # USAGE
 cd project
-# bash run_batch_docker.sh <inputpath> <file_extension> <database> <threads> <image>
-# bash run_batch_docker.sh ${1}             ${2}          ${3}        ${4}     ${5}
+# USAGE
+# bash run_batch_docker.sh <inputpath> <file_extension> <database> <threads> <image> <outputname>
+# bash run_batch_docker.sh ${1}             ${2}          ${3}        ${4}     ${5}   ${6}
 # Example:
-bash run_batch_docker.sh /file/location/ _001.fastq.gz CYP51A 8 jonovox/nextflowcentos:latest
+bash run_batch_docker.sh /workflow/input/ _001.fastq.gz SILVA 8 jonovox/easyseq_covid19:latest SILVA_test
 # <file_extension> most common _001.fastq.gz
 ```
 

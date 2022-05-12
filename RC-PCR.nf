@@ -14,6 +14,7 @@ UMILEN           = "$params.UMILEN"
 minreadlength    = "$params.minreadlength"
 database         = "$params.database"
 primerfile       = "${baseDir}/db/${database}/primers/${database}_primers.fasta"
+ptrimfile        = "${baseDir}/db/${database}/primers/amplicons_16S.txt"
 bedfile          = "${baseDir}/db/${database}/primers/${database}_primers.bed"
 KMAdb            = "${baseDir}/db/${database}/KMA/${database}"
 blastdbpath      = "${baseDir}/db/${database}/"
@@ -33,7 +34,7 @@ threads          = "$params.threads"
 Channel
       .fromFilePairs( params.reads )
       .ifEmpty { "cannot find read pairs in path"}
-      .set  { reads_ch1 }
+      .into  { reads_ch1; reads_ch2 }
 
 log.info """
 
@@ -65,11 +66,10 @@ KMAdb      : $KMAdb
 process '1A_clean_reads' {
     tag '1A'
     conda 'bioconda::fastp=0.20.1 bioconda::pyfastx=0.6.12 conda-forge::simplejson=3.17.0'
-    publishDir outDir + '/fastp', mode: 'copy'
     input:
         set pairID, file(reads) from reads_ch1
     output:
-        set file("${samplename}_R1_fastp.fastq.gz"), file("${samplename}_R2_fastp.fastq.gz") into fastp_2A, fastp_3A, fastp_3C, fastp_6
+        set file("${samplename}_R1_fastp.fastq.gz"), file("${samplename}_R2_fastp.fastq.gz") into fastp_2A
         file "${samplename}.fastp.json"
         file "${samplename}.fastp.html"
         file ".command.*"
@@ -80,6 +80,47 @@ process '1A_clean_reads' {
                                 --umi_len=${UMILEN} --umi --umi_loc=per_read --umi_prefix=UMI \
                                 --html ${samplename}.fastp.html --json ${samplename}.fastp.json \
                                 --length_required ${minreadlength} --trim_poly_g --trim_poly_x
+        """
+}
+
+// Clean reads (adapter and read length filter)
+process '1B_clean_reads' {
+    tag '1B'
+    conda 'bioconda::fastp=0.20.1 bioconda::pyfastx=0.6.12 conda-forge::simplejson=3.17.0'
+    publishDir outDir + '/fastp', mode: 'copy'
+    input:
+        set pairID, file(reads) from reads_ch2
+    output:
+        set file("${samplename}_R1_fastp.fastq.gz"), file("${samplename}_R2_fastp.fastq.gz") into fastp_1C, fastp_3A, fastp_6
+        file "${samplename}.fastp.json"
+        file "${samplename}.fastp.html"
+        file ".command.*"
+    script:
+        """
+        fastp -i ${reads[0]} -o ${samplename}_R1_fastp.fastq.gz \
+                                -I ${reads[1]} -O ${samplename}_R2_fastp.fastq.gz \
+                                --html ${samplename}.fastp.html --json ${samplename}.fastp.json \
+                                --length_required ${minreadlength} --trim_poly_g --trim_poly_x
+        """
+}
+
+// Clean reads (adapter and read length filter)
+process '1C_remove_primers' {
+    tag '1C'
+    conda 'bioconda::ptrimmer=1.3.3'
+    publishDir outDir + '/fastp', mode: 'copy'
+    input:
+        file reads from fastp_1C
+    output:
+        set file("${samplename}_R1_fastp.trim.fastq.gz"), file("${samplename}_R2_fastp.trim.fastq.gz")
+        file "*"
+    script:
+        """
+        ptrimmer -t pair --ampfile ${ptrimfile} --read1 ${reads[0]} --trim1 ${samplename}_R1_fastp.trim.fastq \
+        --read2 ${reads[1]} --trim2 ${samplename}_R2_fastp.trim.fastq --summary ${samplename}.summary.ampcount.txt
+
+        gzip ${samplename}_R1_fastp.trim.fastq
+        gzip ${samplename}_R2_fastp.trim.fastq
         """
 }
 
@@ -116,7 +157,7 @@ process '3A_KMA' {
   script:
     """
     kma -t_db ${KMAdb} -ipe ${reads[0]} ${reads[1]} -t ${threads} \
-    -ef -ex_mode -1t1 -and -apm f -o ${samplename} 2>/dev/null || exit 0
+    -ef -ex_mode -1t1 -mq 120 -and -apm f -o ${samplename} 2>/dev/null || exit 0
     #kma -t_db ${KMAdb} -ipe ${reads[0]} ${reads[1]} -t ${threads} \
     #-a -ex_mode -ef -1t1 -and -apm f -o ${samplename} -sam 4 > ${samplename}.sam 2>/dev/null || exit 0
     """

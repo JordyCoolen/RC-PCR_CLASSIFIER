@@ -80,7 +80,10 @@ def fill_html(args):
 
     # load blast .txt result file of abricate
     blast_df = pd.read_csv(args.blast, sep='\t')
-    blast_df = blast_df.sort_values(by=['%COVERAGE'], ascending=False)
+    try:
+        blast_df = blast_df.sort_values(by=['%COVERAGE'], ascending=False)
+    except KeyError:
+        print("no result")
 
     # load kma .res result file of kma
     kma_df = pd.read_csv(args.kma, sep='\t')
