@@ -39,7 +39,7 @@ bash run_batch_docker.sh /workflow/input/ _001.fastq.gz SILVA 8 jonovox/easyseq_
 
 ##conda environments
 
-  * 1A_clean_reads\
+  * 1A_clean_reads (fastp, version 0.20.1)\
   env-f07c78eef9e8319c7eb087d931e36003
   * 2A_measure_amplicons\
     env-cd4ea0676bf53b5d7e5c6c6c523f0013
@@ -51,7 +51,7 @@ bash run_batch_docker.sh /workflow/input/ _001.fastq.gz SILVA 8 jonovox/easyseq_
     env-b415f051979c22cdef40a3cbee1f0aa3 
   * 5A_annotation\
     env-9f6b61e20675ae28786fdb538092d4db
-  * 6_multiQC\
+  * 6_multiQC (version 1.12)\
     env-3abca7a24ea4d6c708bf4c6cea6413d2
 
 #output

@@ -2,7 +2,7 @@
 
 ######
 INFO = "Convert results to PDF report"
-__version__ = "0.1"
+__version__ = "0.2"
 ######
 
 """
@@ -33,6 +33,8 @@ def parse_args():
                         help="location to abricate blast result file"),
     parser.add_argument("--kma", type=str, required=False,
                         help="location to kma result file .res"),
+    parser.add_argument("--shankey", type=str, required=False,
+                        help="location to shankey.svg file"),
     parser.add_argument("-o", "--outputDir", type=str, required=False,
                         help="full path of output folder", default=os.path.abspath("./"))
     parser.add_argument("-v", "--version", action="version",
@@ -102,6 +104,9 @@ def fill_html(args):
 
         # classification results
         "kma": kma_df.to_html(index=False, header=True),
+
+        # shankey plot of classification results
+        "shankey": args.shankey,
 
         "blast": blast_df.to_html(index=False, header=True),
 

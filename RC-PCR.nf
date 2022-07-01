@@ -38,7 +38,7 @@ Channel
 
 log.info """
 
-NEXTFLOW SILVA Classification RC-PCR V0.1
+NEXTFLOW SILVA Classification RC-PCR V0.2
 ================================
 samplename : $samplename
 reads      : $params.reads
@@ -126,7 +126,7 @@ process '1C_remove_primers' {
 
 // Clean reads (adapter and read length filter)
 process '2A_measure_amplicons' {
-    tag '1A'
+    tag '2A'
     conda 'conda-forge::pandas=1.2.4 bioconda::pysam=0.15.3 anaconda::openpyxl'
     publishDir outDir, mode: 'copy'
     input:
@@ -152,14 +152,34 @@ process '3A_KMA' {
   output:
     file "${samplename}*"
     file "${samplename}.fsa" into consensus_4A
-    file "${samplename}.res" into kma_5A, kma_7B
+    file "${samplename}.res" into kma_3B
+    file "${samplename}.mapstat" into mapstat_3B
     file ".command.*"
   script:
     """
     kma -t_db ${KMAdb} -ipe ${reads[0]} ${reads[1]} -t ${threads} \
     -ef -ex_mode -1t1 -mq 120 -and -apm f -o ${samplename} 2>/dev/null || exit 0
+
     #kma -t_db ${KMAdb} -ipe ${reads[0]} ${reads[1]} -t ${threads} \
     #-a -ex_mode -ef -1t1 -and -apm f -o ${samplename} -sam 4 > ${samplename}.sam 2>/dev/null || exit 0
+    """
+}
+
+// Add calculations to KMA.res output
+// Process 3B: Add stats to KMA.res
+process '3B_KMA' {
+  tag '3B'
+  conda 'conda-forge::pandas=1.2.4 bioconda::pysam=0.15.3 anaconda::openpyxl'
+  publishDir outDir + '/kma', mode: 'copy'
+  input:
+  file mapstat from mapstat_3B
+  file res from kma_3B
+  output:
+    file "${samplename}.res" into kma_5A, kma_5B, kma_7B
+    file ".command.*"
+  script:
+    """
+    python ${baseDir}/bin/abundance.py --mapstat ${mapstat} --res ${res}
     """
 }
 
@@ -213,6 +233,22 @@ process '5A_circle_packing_viz' {
         """
 }
 
+// Visualization using shankeyplot
+process '5B_shankey_viz' {
+    tag '5B'
+    conda 'plotly::plotly anaconda::pandas conda-forge::python-kaleido'
+    publishDir outDir + '/report/viz', mode: 'copy'
+    input:
+        file res from kma_5B
+    output:
+        file ".command.*"
+        file "shankey.png" into shankey_7B
+    script:
+        """
+        python ${baseDir}/bin/shankey.py --res ${res}
+        """
+}
+
 // Process 6: multiQC
 process '6_multiQC' {
   tag '6'
@@ -257,6 +293,7 @@ process '7B_report' {
         file params from params_7B
         file blast from blast_7B
         file kma from kma_7B
+        file shankey from shankey_7B
     output:
         file "${samplename}.html"
         file "${samplename}.pdf"
@@ -264,6 +301,6 @@ process '7B_report' {
     script:
         """
         $reporter --sampleName ${samplename} --params ${params} --blast ${blast} \
-        --kma ${kma}
+        --kma ${kma} --shankey "${outDir}/report/viz/shankey.png"
         """
 }
