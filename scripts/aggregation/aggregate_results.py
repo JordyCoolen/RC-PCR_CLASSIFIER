@@ -41,8 +41,9 @@ def main():
     # concat the files
     df_concat = pd.concat(frames)
     # filter to get quality mutations
-    #df_concat = df_concat[df_concat["Depth"] >= 1]
-    df_concat = df_concat[df_concat["Template_Coverage"] >= 10]
+    df_concat = df_concat[df_concat["Depth"] >= 1]
+    df_concat = df_concat[df_concat["fragmentCount"] >= 100]
+    df_concat = df_concat[df_concat["Template_Coverage"] >= 50]
     
     # create aggregation
     df_final = df_concat.pivot(index="#Template",
