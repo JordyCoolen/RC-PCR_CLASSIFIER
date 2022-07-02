@@ -48,7 +48,7 @@ def main():
     # create aggregation
     df_final = df_concat.pivot(index="#Template",
                                 columns="sampleName",
-                                values="Depth")
+                                values="abundance")
 
     # store result
     df_final.to_csv(f"{args.outputDir}/AGGREGATION_results.txt", sep="\t")
