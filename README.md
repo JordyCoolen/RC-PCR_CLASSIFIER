@@ -1,4 +1,5 @@
-#NEXTFLOW SILVA Classification RC-PCR V0.2 (BETA)
+# RC-PCR CLASSIFIER 
+## Version: V0.2 (BETA)
 
 # install
 1. obtain docker image
@@ -35,7 +36,7 @@ bash run_batch_docker.sh /workflow/input/ _001.fastq.gz SILVA 8 jonovox/easyseq_
 ```
 
 ## FLOW-DIAGRAM
-![Alt text](plots/flowchart.png?raw=true "Flowdiagram")
+![Alt text](docs/images/flowchart.png?raw=true "Flowdiagram")
 
 
 
@@ -59,7 +60,7 @@ bash run_batch_docker.sh /workflow/input/ _001.fastq.gz SILVA 8 jonovox/easyseq_
 
 #output
 ## SHANKEY PLOT
-![Alt text](plots/shankeyplot_mock.svg?raw=true "Shankeyplot")
+![Alt text](docs/images/shankeyplot_mock.png?raw=true "Shankeyplot")
 
 ```bash
 .

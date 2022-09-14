@@ -4,7 +4,10 @@ hide:
   - toc
 ---
 
-# RC-PCR CLASSIFIER RC-PCR V0.2 (BETA)
+# RC-PCR CLASSIFIER 
+## Version: V0.2 (BETA)
+
+![Alt text](images/shankeyplot_mock.png?raw=true "Shankeyplot")
 
 # install
 1. obtain docker image
@@ -41,9 +44,7 @@ bash run_batch_docker.sh /workflow/input/ _001.fastq.gz SILVA 8 jonovox/easyseq_
 ```
 
 ## FLOW-DIAGRAM
-![Alt text](plots/flowchart.png?raw=true "Flowdiagram")
-
-
+![Alt text](images/flowchart.png?raw=true "Flowdiagram")
 
 
 ##conda environments
@@ -63,9 +64,9 @@ bash run_batch_docker.sh /workflow/input/ _001.fastq.gz SILVA 8 jonovox/easyseq_
   * 6_multiQC (version 1.12)\
     env-3abca7a24ea4d6c708bf4c6cea6413d2
 
-#output
+# output
 ## SHANKEY PLOT
-![Alt text](plots/shankeyplot_mock.svg?raw=true "Shankeyplot")
+![Alt text](images/shankeyplot_mock.png?raw=true "Shankeyplot")
 
 ```bash
 .
