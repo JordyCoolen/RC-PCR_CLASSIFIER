@@ -1,6 +1,6 @@
 site_name: RC-PCR CLASSIFIER
-repo_name: jordycoolen/Classifier_RC-PCR
-repo_url: https://github.com/jordycoolen/Classifier_RC-PCR
+repo_name: jordycoolen/RC-PCR_CLASSIFIER
+repo_url: https://github.com/jordycoolen/RC-PCR_CLASSIFIER
 edit_uri: ""
 
 theme:
@@ -63,7 +63,7 @@ markdown_extensions:
         repo_url_shorthand: true
         social_url_shorthand: true
         user: Jordy Coolen
-        repo: RC-PCR Classifier
+        repo: RC-PCR CLASSIFIER
     - pymdownx.mark
     - pymdownx.smartsymbols
     - pymdownx.snippets:
