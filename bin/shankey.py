@@ -42,6 +42,10 @@ def createdf(input):
 
     print(df["#Template"])
 
+    df = df[df["Depth"] >= 1]
+    df = df[df["fragmentCount"] >= 100]
+    df = df[df["Template_Coverage"] >= 50]
+
     lvls = df["#Template"].str.split(";", expand = True)
 
     df["lvl1"] = "Bacteria"
@@ -126,7 +130,7 @@ if __name__ == "__main__":
     fig = genSankey(df, cat_cols=['lvl1', 'lvl2', 'lvl3', 'lvl4', 'lvl5', 'lvl6', 'lvl7'], value_cols='fragmentCount', title='16S')
     #plotly.offline.plot(fig, validate=False)
 
-    plotly.io.write_image(fig, "shankey.png", scale=1, width=800, height=400)
-    plotly.io.write_image(fig, "shankey.svg", scale=1, width=1200, height=600)
+    plotly.io.write_image(fig, os.path.join(args.outputDir, "shankey.png"), scale=1, width=800, height=400)
+    plotly.io.write_image(fig, os.path.join(args.outputDir, "shankey.svg"), scale=1, width=1200, height=600)
 
     print("Finished")

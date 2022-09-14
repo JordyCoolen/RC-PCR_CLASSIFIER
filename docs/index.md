@@ -1,4 +1,10 @@
-#NEXTFLOW SILVA Classification RC-PCR V0.2 (BETA)
+---
+hide:
+  - navigation
+  - toc
+---
+
+# RC-PCR CLASSIFIER RC-PCR V0.2 (BETA)
 
 # install
 1. obtain docker image
